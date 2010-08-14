@@ -1,0 +1,7 @@
+repoze.bfg.extdirect Changelog
+==========================
+
+0.1
+----------------
+
+- Initial release.
