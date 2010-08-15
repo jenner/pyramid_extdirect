@@ -163,4 +163,17 @@ parameter to the ``@extdirect_method`` decorator::
     def upload_user_picture(uploaded_file):
         # uploaded_file is now a FieldStorage instance
 
+Also, in some situations it is absolutely necessary to access the ``request`` object
+in your functions, this can be achieved by passing ``request_as_last_param`` to the
+decorator::
 
+    from repoze.bfg.security import authenticated_userid
+
+    @extdirect_method(action='App', request_as_last_param=True):
+    def get_current_user(request):
+        return authenticated_userid(request)
+
+
+That's all folks, enjoy!
+-- 
+Igor Stroh, <igor.stroh -at- rulim.de>
