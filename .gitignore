@@ -1,0 +1,4 @@
+*.pyc
+repoze.bfg.extdirect.egg-info/
+build/
+dist/
