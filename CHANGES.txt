@@ -1,6 +1,12 @@
 repoze.bfg.extdirect Changelog
 ==========================
 
+0.1.1
+----------------
+- Fixed packaging
+- Fixed numargs for methods with request_as_last_param
+
+
 0.1
 ----------------
 
