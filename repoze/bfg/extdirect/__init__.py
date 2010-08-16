@@ -243,6 +243,7 @@ class extdirect_method(object):
         numargs = len(args)
 
         settings = self.__dict__.copy()
+        settings['numargs'] = numargs
 
         def callback(scanner, name, ob):
             if self.action is not None:
@@ -257,13 +258,15 @@ class extdirect_method(object):
             if 'action' in settings:
                 del settings['action']
 
-            scanner.extdirect.add_action(name, callback=wrapped, numargs=numargs, **settings)
+            if settings['numargs'] > 0 and settings['request_as_last_param']:
+                settings['numargs'] -= 1
+            scanner.extdirect.add_action(name, callback=wrapped, **settings)
 
         info = self.venusian.attach(wrapped, callback, category='extdirect')
 
         settings['scope'] = info.scope
         if info.scope == 'class':
-            numargs = numargs - 1
+            settings['numargs'] -= 1
             if '__acl__' in info.locals:
                 settings['acl'] = info.locals['__acl__']
             if settings.get('method_name', None) is None:
