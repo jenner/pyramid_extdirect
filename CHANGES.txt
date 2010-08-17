@@ -1,6 +1,11 @@
 repoze.bfg.extdirect Changelog
 ==============================
 
+0.1.2
+----------------
+- Fixed typo in JsonReprEncoder
+
+
 0.1.1
 ----------------
 - Fixed packaging
