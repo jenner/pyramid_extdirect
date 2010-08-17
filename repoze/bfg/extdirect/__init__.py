@@ -40,7 +40,7 @@ class JsonReprEncoder(json.JSONEncoder):
     def default(self, obj):
         jr = getattr(obj, 'json_repr', None)
         if jr is None:
-            return super(PtEncoder, self).default(obj)
+            return super(JsonReprEncoder, self).default(obj)
         return jr()
 
 class IExtdirect(Interface):
