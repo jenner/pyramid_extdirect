@@ -1,6 +1,6 @@
 from zope.interface import Interface
 from zope.configuration.fields import GlobalObject
-from zope.schema import TextLine
+from zope.schema import TextLine, Bool
 
 from repoze.bfg.zcml import route, utility
 from repoze.bfg.path import caller_package, caller_module
@@ -60,6 +60,12 @@ class IExtdirectDirective(Interface):
         required=False
         )
 
+    expose_exceptions = Bool(
+        title=u"Expose Exceptions",
+        description=u"If true show a stacktrace of the original Exception in JSON output",
+        required=False
+        )
+
 def conf_handler(context,
         api_name,
         api_path,
@@ -69,12 +75,13 @@ def conf_handler(context,
         permission=None,
         namespace=None,
         descriptor=None,
-        package=None):
+        package=None,
+        expose_exceptions=False):
     # create and configure utility
     if package is None:
         package = "."
     app = context.resolve(package)
-    extd = Extdirect(app, api_path, router_path, namespace=namespace, descriptor=descriptor)
+    extd = Extdirect(app, api_path, router_path, namespace=namespace, descriptor=descriptor, expose_exceptions=expose_exceptions)
     utility(context, component=extd, provides=IExtdirect)
     # add api view
     route(context, api_name, api_path, view=api_view, permission=permission, for_=for_)

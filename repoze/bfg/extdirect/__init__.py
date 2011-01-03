@@ -50,32 +50,32 @@ class IExtdirect(Interface):
 
 class Extdirect(object):
     """
-        Handles ExtDirect API respresentation and routing.
-        
-        The Extdirect accepts a number of arguments: ``app``,
-        ``api_path``, ``router_path``, ``namespace``, ``descriptor``
-        and ``expose_exceptions``.
+    Handles ExtDirect API respresentation and routing.
 
-        The ``app`` argument is a python package or module used
-        which is used to scan for ``extdirect_method`` decorated
-        functions/methods once the API is built.
+    The Extdirect accepts a number of arguments: ``app``,
+    ``api_path``, ``router_path``, ``namespace``, ``descriptor``
+    and ``expose_exceptions``.
 
-        The ``api_path`` and ``router_path`` arguments are the
-        paths/URIs of repoze.bfg views. ``api_path`` renders
-        the ExtDirect API, ``router_path`` is the routing endpoint
-        for ExtDirect calls.
+    The ``app`` argument is a python package or module used
+    which is used to scan for ``extdirect_method`` decorated
+    functions/methods once the API is built.
 
-        If the ``namespace`` argument is passed it will be used in
-        the API as Ext namespace (default is 'Ext.app').
+    The ``api_path`` and ``router_path`` arguments are the
+    paths/URIs of repoze.bfg views. ``api_path`` renders
+    the ExtDirect API, ``router_path`` is the routing endpoint
+    for ExtDirect calls.
 
-        If the ``descriptor`` argument is passed it's used as ExtDirect
-        API descriptor name (default is Ext.app.REMOTING_API).
+    If the ``namespace`` argument is passed it will be used in
+    the API as Ext namespace (default is 'Ext.app').
 
-        See http://www.sencha.com/products/js/direct.php for further infos.
-        
-        The optional ``expose_exceptions`` argument controls the output of
-        an ExtDirect call - if ``True``, the router will provide additional
-        information about exceptions.
+    If the ``descriptor`` argument is passed it's used as ExtDirect
+    API descriptor name (default is Ext.app.REMOTING_API).
+
+    See http://www.sencha.com/products/js/direct.php for further infos.
+
+    The optional ``expose_exceptions`` argument controls the output of
+    an ExtDirect call - if ``True``, the router will provide additional
+    information about exceptions.
     """
 
     implements(Interface)
@@ -96,30 +96,30 @@ class Extdirect(object):
 
     def add_action(self, action_name, **settings):
         """
-            Registers an action.
-            
-            ``action_name``: Action name
+        Registers an action.
 
-            Possible values of `settings``:
+        ``action_name``: Action name
 
-            ``method_name``: Method name
-            ``callback``: The callback to execute upon client request
-            ``numargs``: Number of arguments passed to the wrapped callable
-            ``scope``: class/module/exec/etc., see venusian.advice.getFrameInfo()
-            ``accept_files``: If true, this action will be declared as formHandler in API
-            ``instance_name``: In case we're dealing with an instance method ``instance_name``
-                is the name of the traversable object in BFG traversal graph
-            ``permission``: The permission needed to execute the wrapped callable
-            ``request_as_last_param``: If true, the wrapped callable will receive a request object
-                as last argument
+        Possible values of `settings``:
 
-            """
+        ``method_name``: Method name
+        ``callback``: The callback to execute upon client request
+        ``numargs``: Number of arguments passed to the wrapped callable
+        ``scope``: class/module/exec/etc., see venusian.advice.getFrameInfo()
+        ``accept_files``: If true, this action will be declared as formHandler in API
+        ``instance_name``: In case we're dealing with an instance method ``instance_name``
+            is the name of the traversable object in BFG traversal graph
+        ``permission``: The permission needed to execute the wrapped callable
+        ``request_as_last_param``: If true, the wrapped callable will receive a request object
+            as last argument
+
+        """
         if action_name not in self.actions:
             self.actions[action_name] = {}
         self.actions[action_name][_mk_cb_key(action_name, settings['method_name'])] = settings
 
     def get_actions(self):
-        """ build and return a dict of actions to be used in ExtDirect API """
+        """ Builds and returns a dict of actions to be used in ExtDirect API """
         ret = {}
         for k, v in self.actions.items():
             itms = []
@@ -135,7 +135,7 @@ class Extdirect(object):
         return ret
 
     def get_method(self, action, method):
-        """ returns a method's settings """
+        """ Returns a method's settings """
         if action not in self.actions:
             raise KeyError("Invalid action: " + action)
         key = _mk_cb_key(action, method)
@@ -144,14 +144,14 @@ class Extdirect(object):
         return self.actions[action][key]
 
     def _assert_scanned(self):
-        """ scans the venusian decorator for our package/module """
+        """ Scans the venusian decorator for our package/module """
         if not self.scanned:
             scanner = self.venusian.Scanner(extdirect=self)
             scanner.scan(self.app, categories=['extdirect'])
             self.scanned = True
 
     def dump_api(self, request):
-        """ dump all known remote methods """
+        """ Dumps all known remote methods """
         self._assert_scanned()
         ret = ["Ext.ns('%s'); %s = " % (self.namespace, self.descriptor)]
         apidict = dict(
@@ -165,7 +165,7 @@ class Extdirect(object):
         return "".join(ret)
 
     def _do_route(self, action_name, method_name, params, transaction_id, request):
-        """ performs routing, i.e. calls decorated methods/functions """
+        """ Performs routing, i.e. calls decorated methods/functions """
         settings = self.get_method(action_name, method_name)
         permission = settings.get('permission', None)
         ret = {
@@ -227,7 +227,7 @@ class Extdirect(object):
 
 
 class extdirect_method(object):
-    """ enables direct extjs access to python methods through json/form submit """
+    """ Enables direct extjs access to python methods through json/form submit """
 
     venusian = venusian # for testing injection
     def __init__(self, action=None, method_name=None, permission=None, accepts_files=False, request_as_last_param=False):
@@ -281,7 +281,7 @@ class extdirect_method(object):
         return wrapped
 
 def is_form_submit(request):
-    """ checks if a request contains extdirect form submit """
+    """ Checks if a request contains extdirect form submit """
     p = request.params
     keys = list(FORM_DATA_KEYS)
     for key in p.keys():
@@ -308,7 +308,7 @@ def parse_extdirect_form_submit(request):
     return [(action, method, [data], tid)]
 
 def parse_extdirect_request(request):
-    """ 
+    """
         Extracts extdirect remoting parameters from request
         which are provided by an AJAX request
     """
@@ -327,13 +327,13 @@ def parse_extdirect_request(request):
 
 
 def api_view(request):
-    """ renders the API """
+    """ Renders the API """
     util = get_current_registry().getUtility(IExtdirect)
     body = util.dump_api(request)
     return Response(body, content_type='text/javascript', charset='UTF-8')
 
 def router_view(request):
-    """ renders the result of a ExtDirect call """
+    """ Renders the result of a ExtDirect call """
     util = get_current_registry().getUtility(IExtdirect)
     (body, is_form_data) = util.route(request)
     ctype = 'application/json'
