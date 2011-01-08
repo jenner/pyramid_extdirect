@@ -87,3 +87,4 @@ def conf_handler(context,
     route(context, api_name, api_path, view=api_view, permission=permission, for_=for_)
     # add router view
     route(context, router_name, router_path, view=router_view, permission=permission, for_=for_)
+    extd.scan()

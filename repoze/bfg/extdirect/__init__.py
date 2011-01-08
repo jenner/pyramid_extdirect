@@ -78,7 +78,7 @@ class Extdirect(object):
     information about exceptions.
     """
 
-    implements(Interface)
+    implements(IExtdirect)
 
     venusian = venusian
 
@@ -143,7 +143,7 @@ class Extdirect(object):
             raise KeyError("No such method in '%s': '%s':" % (action, method))
         return self.actions[action][key]
 
-    def _assert_scanned(self):
+    def scan(self):
         """ Scans the venusian decorator for our package/module """
         if not self.scanned:
             scanner = self.venusian.Scanner(extdirect=self)
@@ -152,7 +152,6 @@ class Extdirect(object):
 
     def dump_api(self, request):
         """ Dumps all known remote methods """
-        self._assert_scanned()
         ret = ["Ext.ns('%s'); %s = " % (self.namespace, self.descriptor)]
         apidict = dict(
             url = request.application_url + '/' + self.router_path,
@@ -207,7 +206,6 @@ class Extdirect(object):
         return ret
 
     def route(self, request):
-        self._assert_scanned()
         is_form_data = False
         if is_form_submit(request):
             is_form_data = True
@@ -245,7 +243,7 @@ class extdirect_method(object):
         settings = self.__dict__.copy()
         settings['numargs'] = numargs
 
-        def callback(scanner, name, ob):
+        def cb(scanner, name, ob):
             if self.action is not None:
                 name = self.action
             elif settings['scope'] == 'class':
@@ -262,7 +260,7 @@ class extdirect_method(object):
                 settings['numargs'] -= 1
             scanner.extdirect.add_action(name, callback=wrapped, **settings)
 
-        info = self.venusian.attach(wrapped, callback, category='extdirect')
+        info = self.venusian.attach(wrapped, cb, category='extdirect')
 
         settings['scope'] = info.scope
         if info.scope == 'class':
@@ -328,13 +326,13 @@ def parse_extdirect_request(request):
 
 def api_view(request):
     """ Renders the API """
-    util = get_current_registry().getUtility(IExtdirect)
+    util = request.registry.getUtility(IExtdirect)
     body = util.dump_api(request)
     return Response(body, content_type='text/javascript', charset='UTF-8')
 
 def router_view(request):
     """ Renders the result of a ExtDirect call """
-    util = get_current_registry().getUtility(IExtdirect)
+    util = request.registry.getUtility(IExtdirect)
     (body, is_form_data) = util.route(request)
     ctype = 'application/json'
     if is_form_data:
