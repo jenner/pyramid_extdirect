@@ -29,7 +29,7 @@ setup(name='repoze.bfg.extdirect',
     zip_safe=False,
     tests_require=['repoze.bfg', 'venusian'],
     install_requires=['repoze.bfg', 'venusian'],
-    test_suite="repoze.bfg.extdirect",
+    test_suite="repoze.bfg.extdirect.tests",
     entry_points="""\
     """
 )

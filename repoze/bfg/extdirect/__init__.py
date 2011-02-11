@@ -80,8 +80,6 @@ class Extdirect(object):
 
     implements(IExtdirect)
 
-    venusian = venusian
-
     def __init__(self, app, api_path, router_path, namespace='Ext.app', descriptor='Ext.app.REMOTING_API', expose_exceptions=True):
         self.app = app
         self.api_path = api_path
@@ -145,10 +143,9 @@ class Extdirect(object):
 
     def scan(self):
         """ Scans the venusian decorator for our package/module """
-        if not self.scanned:
-            scanner = self.venusian.Scanner(extdirect=self)
-            scanner.scan(self.app, categories=['extdirect'])
-            self.scanned = True
+        scanner = venusian.Scanner(extdirect=self)
+        scanner.scan(self.app, categories=['extdirect'])
+        self.scanned = True
 
     def dump_api(self, request):
         """ Dumps all known remote methods """
@@ -227,7 +224,6 @@ class Extdirect(object):
 class extdirect_method(object):
     """ Enables direct extjs access to python methods through json/form submit """
 
-    venusian = venusian # for testing injection
     def __init__(self, action=None, method_name=None, permission=None, accepts_files=False, request_as_last_param=False):
         self.action = action
         self.method_name = method_name
@@ -260,7 +256,7 @@ class extdirect_method(object):
                 settings['numargs'] -= 1
             scanner.extdirect.add_action(name, callback=wrapped, **settings)
 
-        info = self.venusian.attach(wrapped, cb, category='extdirect')
+        info = venusian.attach(wrapped, cb, category='extdirect')
 
         settings['scope'] = info.scope
         if info.scope == 'class':
