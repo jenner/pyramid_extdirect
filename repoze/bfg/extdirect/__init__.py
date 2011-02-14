@@ -141,12 +141,6 @@ class Extdirect(object):
             raise KeyError("No such method in '%s': '%s':" % (action, method))
         return self.actions[action][key]
 
-    def scan(self):
-        """ Scans the venusian decorator for our package/module """
-        scanner = venusian.Scanner(extdirect=self)
-        scanner.scan(self.app, categories=['extdirect'])
-        self.scanned = True
-
     def dump_api(self, request):
         """ Dumps all known remote methods """
         ret = ["Ext.ns('%s'); %s = " % (self.namespace, self.descriptor)]
@@ -175,7 +169,7 @@ class Extdirect(object):
         if params is None:
             params = list()
         if req_as_last:
-            params = params + [request]
+            params.append(request)
         try:
             callback = settings['callback']
             if settings['scope'] == 'class':
@@ -183,15 +177,10 @@ class Extdirect(object):
                 instance = request.root[settings['instance_name']]
                 if permission is not None and not has_permission(permission, instance, request):
                     raise Exception("Access denied")
-                params = [instance] + params
+                params.insert(0, instance)
                 if callback is None or not callable(callback):
                     raise Exception("Invalid method '%s' for action '%s'" % (method_name, action_name,))
-            if params:
-                result = callback(*params)
-            else:
-                result = callback()
-
-            ret["result"] = result
+            ret["result"] = callback(*params)
         except Exception, e:
             ret["type"] = "exception"
             if self.expose_exceptions:
@@ -225,54 +214,70 @@ class extdirect_method(object):
     """ Enables direct extjs access to python methods through json/form submit """
 
     def __init__(self, action=None, method_name=None, permission=None, accepts_files=False, request_as_last_param=False):
-        self.action = action
-        self.method_name = method_name
-        self.permission = permission
-        self.accepts_files = accepts_files
-        self.request_as_last_param = request_as_last_param
+        self._settings = dict(
+            action = action,
+            method_name = method_name,
+            permission = permission,
+            accepts_files = accepts_files,
+            request_as_last_param = request_as_last_param,
+        )
 
-    def __call__(self, wrapped):
-        args, varargs, varkw, defaults = inspect.getargspec(wrapped)
+    @property
+    def settings(self):
+        return self._settings.copy()
 
+    def register(self, scanner, name, ob):
+        info = self.info
+        settings = self.settings
+        wrapped = self.wrapped
+
+        (args, varargs, varkw, defaults) = inspect.getargspec(wrapped)
         numargs = len(args)
 
-        settings = self.__dict__.copy()
+        if numargs and settings['request_as_last_param']:
+            numargs -= 1
+
         settings['numargs'] = numargs
 
-        def cb(scanner, name, ob):
-            if self.action is not None:
-                name = self.action
-            elif settings['scope'] == 'class':
-                extdirect_settings = getattr(ob, '__extdirect_settings__', None)
-                if extdirect_settings is not None:
-                    if 'default_action_name' in extdirect_settings:
-                        name = extdirect_settings['default_action_name']
-                    if self.permission is None and 'default_permission' in extdirect_settings:
-                        settings['permission'] = extdirect_settings['default_permission']
-            if 'action' in settings:
-                del settings['action']
-
-            if settings['numargs'] > 0 and settings['request_as_last_param']:
-                settings['numargs'] -= 1
-            scanner.extdirect.add_action(name, callback=wrapped, **settings)
-
-        info = venusian.attach(wrapped, cb, category='extdirect')
-
-        settings['scope'] = info.scope
-        if info.scope == 'class':
+        scope = info.scope
+        settings['scope'] = scope
+        if scope == 'class':
             settings['numargs'] -= 1
             if '__acl__' in info.locals:
                 settings['acl'] = info.locals['__acl__']
-            if settings.get('method_name', None) is None:
+            if settings.get('method_name') is None:
                 settings['method_name'] = wrapped.__name__
             settings['instance_name'] = None
             if '__name__' in info.locals:
                 settings['instance_name'] = info.locals['__name__']
-        elif info.scope == 'module':
-            if settings.get('method_name', None) is None:
+        elif scope == 'module':
+            if settings.get('method_name') is None:
                 settings['method_name'] = wrapped.func_name
 
+        action = settings.get("action")
+        if action is not None:
+            name = action
+        elif scope == 'class':
+            extdirect_settings = getattr(ob, '__extdirect_settings__', None)
+            if extdirect_settings is not None:
+                if 'default_action_name' in extdirect_settings:
+                    name = extdirect_settings['default_action_name']
+                if settings.get("permission") is None\
+                        and 'default_permission' in extdirect_settings:
+                    settings['permission'] = extdirect_settings['default_permission']
+        if 'action' in settings:
+            del settings['action']
+
+        extdirect = scanner.config.registry.getUtility(IExtdirect)
+        extdirect.add_action(name, callback=wrapped, **settings)
+
+    def __call__(self, wrapped):
+        self.info = venusian.attach(wrapped,
+                                    self.register,
+                                    category='extdirect')
+        self.wrapped = wrapped
         return wrapped
+
 
 def is_form_submit(request):
     """ Checks if a request contains extdirect form submit """
