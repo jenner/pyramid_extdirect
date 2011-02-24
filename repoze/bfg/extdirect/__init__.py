@@ -11,6 +11,8 @@ from repoze.bfg.path import caller_package
 from repoze.bfg.compat import json
 from repoze.bfg.security import has_permission
 
+from pyramid.view import render_view_to_response
+
 from webob import Response
 from cStringIO import StringIO
 import sys, traceback
@@ -182,13 +184,27 @@ class Extdirect(object):
                     raise Exception("Invalid method '%s' for action '%s'" % (method_name, action_name,))
             ret["result"] = callback(*params)
         except Exception, e:
+            # Let a user defined view for specific exception prevent returning
+            # a server error.
+            exception_view = render_view_to_response(e, request)
+            if exception_view is not None:
+                ret["result"] = exception_view
+                return ret
+
             ret["type"] = "exception"
             if self.expose_exceptions:
-                f = StringIO()
-                traceback.print_exc(file=f)
-                ret["result"] = {'error': True, 'message': str(e), 'exception_class': str(Exception), 'stacktrace': f.getvalue()}
+                ret["result"] = {
+                    'error': True,
+                    'message': str(e),
+                    'exception_class': str(e.__class__),
+                    'stacktrace': traceback.format_exc()
+                }
             else:
-                ret["result"] = {'error': True, 'message': 'Error executing %s.%s' % (action_name, method_name,)}
+                message = 'Error executing %s.%s' % (action_name, method_name)}
+                ret["result"] = {
+                    'error': True,
+                    'message': message
+                }
         return ret
 
     def route(self, request):
