@@ -221,8 +221,7 @@ class Extdirect(object):
 
 
 class extdirect_method(object):
-    """ Enables direct extjs access to python methods through json/form submit """
-
+    """Enables direct extjs access to python methods through json/form submit"""
     def __init__(self, action=None, method_name=None, permission=None,
                  accepts_files=False, request_as_last_param=False):
         self._settings = dict(
