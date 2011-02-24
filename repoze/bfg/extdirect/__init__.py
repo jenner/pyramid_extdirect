@@ -148,6 +148,8 @@ class Extdirect(object):
 
     def _do_route(self, action_name, method_name, params, trans_id, request):
         """ Performs routing, i.e. calls decorated methods/functions """
+        if params is None:
+            params = list()
         settings = self.get_method(action_name, method_name)
         permission = settings.get('permission', None)
         ret = {
@@ -158,25 +160,24 @@ class Extdirect(object):
             "result": None
         }
 
-        req_as_last = settings.get('request_as_last_param', False)
-        if params is None:
-            params = list()
-        if req_as_last:
+
+        callback = settings['callback']
+
+        append_request = settings.get('request_as_last_param', False)
+        permission_ok = True
+        if hasattr(callback, "im_class"):
+            cls = callback.im_class
+            instance = cls(request)
+            params.insert(0, instance)
+            if permission is not None:
+                permission_ok = has_permission(permission, instance, request)
+        elif append_request:
             params.append(request)
 
         try:
-            callback = settings['callback']
-            if hasattr(callback, "im_class"):
-                instance = callback.im_class()
-                if (permission is not None) \
-                        and not has_permission(permission, instance, request):
-                    raise Exception("Access denied")
-                params.insert(0, instance)
-            try:
-                ret["result"] = callback(*params)
-            except TypeError:
-                raise Exception("Invalid method '%s' for action '%s'"
-                                % (method_name, action_name,))
+            if not permission_ok:
+                raise Exception("Access denied")
+            ret["result"] = callback(*params)
         except Exception, e:
             # Let a user defined view for specific exception prevent returning
             # a server error.
@@ -222,7 +223,8 @@ class Extdirect(object):
 class extdirect_method(object):
     """ Enables direct extjs access to python methods through json/form submit """
 
-    def __init__(self, action=None, method_name=None, permission=None, accepts_files=False, request_as_last_param=False):
+    def __init__(self, action=None, method_name=None, permission=None,
+                 accepts_files=False, request_as_last_param=False):
         self._settings = dict(
             action = action,
             method_name = method_name,
@@ -241,7 +243,6 @@ class extdirect_method(object):
         self.info = venusian.attach(wrapped,
                                     self.register,
                                     category='extdirect')
-        self.wrapped = wrapped
         return wrapped
 
     def _get_settings(self):
@@ -273,7 +274,8 @@ class extdirect_method(object):
         if class_context:
             class_settings = getattr(ob, '__extdirect_settings__', None)
             if class_settings:
-                name = class_settings.get("default_action_name", name)
+                if action is None:
+                    name = class_settings.get("default_action_name", name)
                 if settings.get("permission") is None:
                     permission = class_settings.get("default_permission")
                     settings["permission"] = permission
