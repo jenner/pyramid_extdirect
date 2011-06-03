@@ -1,10 +1,10 @@
 repoze.bfg.extdirect Changelog
 ==============================
 
-0.1.3
+0.2
 ----------------
-- Fixed multiple calls to register() in venusian.scan() (Thanks Manuel Hermann)
-- This is the last repoze.bfg compatible release, 0.2 will support pyramid only
+- Fixed form quotes quoting
+- Move package structure from repoze.bfg to pyramid
 
 
 0.1.2

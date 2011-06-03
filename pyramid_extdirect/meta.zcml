@@ -2,12 +2,12 @@
     xmlns="http://namespaces.zope.org/zope"
     xmlns:meta="http://namespaces.zope.org/meta">
 
-  <meta:directives namespace="http://namespaces.repoze.org/bfg">
+  <meta:directives namespace="http://pylonshq.com/pyramid">
 
     <meta:directive
         name="extdirect"
-        schema="repoze.bfg.extdirect.zcml.IExtdirectDirective"
-        handler="repoze.bfg.extdirect.zcml.conf_handler"
+        schema="pyramid_extdirect.extdirect.zcml.IExtdirectDirective"
+        handler="pyramid_extdirect.extdirect.zcml.conf_handler"
         />
 
   </meta:directives>

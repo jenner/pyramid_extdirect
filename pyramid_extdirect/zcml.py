@@ -1,14 +1,14 @@
+import os
+
+from pyramid_zcml import route
+from pyramid_zcml import utility
 from zope.interface import Interface
 from zope.configuration.fields import GlobalObject
 from zope.schema import TextLine, Bool
 
-from repoze.bfg.zcml import route, utility
-from repoze.bfg.path import caller_package, caller_module
+from pyramid.extdirect import api_view, router_view
+from pyramid.extdirect import Extdirect, IExtdirect
 
-from repoze.bfg.extdirect import api_view, router_view
-from repoze.bfg.extdirect import Extdirect, IExtdirect
-
-import os
 
 
 class IExtdirectDirective(Interface):
