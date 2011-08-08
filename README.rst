@@ -58,7 +58,7 @@ Usage example:
 We need to add the ``pyramid_extdirect`` meta.zcml to our applications configure.zcml
 so we're able to use the ``<extdirect ... />`` configuration directive::
 
-    <configure xmlns="http://namespaces.repoze.org/bfg">
+    <configure xmlns="http://pylonshq.com/pyramid">
 
       <include package="pyramid.includes" />
       <include package="pyramid_extdirect" file="meta.zcml" />
