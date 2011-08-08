@@ -1,5 +1,8 @@
 repoze.bfg.extdirect Changelog
 ==============================
+0.3
+----------------
+Renamed project to pyramid_extdirect
 
 0.2
 ----------------

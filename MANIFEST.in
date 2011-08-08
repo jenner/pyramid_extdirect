@@ -1,4 +1,4 @@
 include README.rst
 include *.txt
-include repoze/bfg/extdirect/meta.zcml
+include pyramid_extdirect/meta.zcml
 
