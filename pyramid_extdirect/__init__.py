@@ -145,18 +145,18 @@ class Extdirect(object):
             raise KeyError("No such method in '%s': '%s':" % (action, method))
         return self.actions[action][key]
 
-    def dump_api(self, request):
-        """ Dumps all known remote methods """
-        ret = ["Ext.ns('%s'); %s = " % (self.namespace, self.descriptor)]
-        apidict = dict(
+    def _get_api_dict(self, request):
+        return dict(
             url = request.application_url + '/' + self.router_path,
             type = 'remoting',
             namespace = self.namespace,
             actions = self.get_actions()
         )
-        ret.append(json.dumps(apidict))
-        ret.append(";")
-        return "".join(ret)
+
+    def dump_api(self, request):
+        """ Dumps all known remote methods """
+        return """Ext.ns('%s'); %s = %s;""" % \
+            (self.namespace, self.descriptor, json.dumps(self._get_api_dict(request)))
 
     def _do_route(self, action_name, method_name, params, trans_id, request):
         """ Performs routing, i.e. calls decorated methods/functions """
