@@ -2,3 +2,4 @@
 pyramid_extdirect.egg-info/
 build/
 dist/
+.coverage
