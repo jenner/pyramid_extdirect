@@ -1,4 +1,4 @@
 *.pyc
-repoze.bfg.extdirect.egg-info/
+pyramid_extdirect.egg-info/
 build/
 dist/
