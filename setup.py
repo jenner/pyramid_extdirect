@@ -2,8 +2,6 @@ import os
 
 from setuptools import setup, find_packages
 
-import pyramid_extdirect
-
 here = os.path.abspath(os.path.dirname(__file__))
 README = open(os.path.join(here, 'README.rst')).read()
 CHANGES = open(os.path.join(here, 'CHANGES.txt')).read()
@@ -11,7 +9,7 @@ CHANGES = open(os.path.join(here, 'CHANGES.txt')).read()
 requires = ['pyramid', 'venusian']
 
 setup(name='pyramid_extdirect',
-    version=pyramid_extdirect.__version__,
+    version='0.3',
     description='ExtDirect Implementation for Pyramid',
     long_description=README + '\n\n' +  CHANGES,
     classifiers=[
@@ -29,6 +27,7 @@ setup(name='pyramid_extdirect',
     include_package_data=True,
     zip_safe=False,
     tests_require=requires,
+    test_suite="pyramid_extdirect",
     install_requires=requires,
     entry_points="""\
     """
