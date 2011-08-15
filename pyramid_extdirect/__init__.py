@@ -270,6 +270,8 @@ class extdirect_method(object):
             # instance var doesn't count
             numargs -= 1
         else:
+            if settings['action'] is None:
+                raise ValueError("Decorated function has no action (name)")
             callback = ob
             numargs = callback.func_code.co_argcount
 
@@ -370,9 +372,10 @@ def includeme(config):
     config.registry.registerUtility(extd, IExtdirect)
 
     api_view_perm = settings.get("pyramid_extdirect.api_view_permission")
-    config.add_route('extapi', extd.api_path, view=api_view,
-                     view_permission=api_view_perm)
+    config.add_route('extapi', extd.api_path)
+    config.add_view(api_view, route_name='extapi', permission=api_view_perm)
+
     router_view_perm = settings.get("pyramid_extdirect.router_view_permission")
-    config.add_route('extrouter', extd.router_path, view=router_view,
-                     view_permission=router_view_perm)
+    config.add_route('extrouter', extd.router_path)
+    config.add_view(router_view, route_name='extrouter', permission=router_view_perm)
 
