@@ -15,7 +15,7 @@ setup(name='pyramid_extdirect',
     classifiers=[
         "Intended Audience :: Developers",
         "Programming Language :: Python",
-        "Framework :: Pyramid",
+        "Framework :: Pylons",
         "License :: Repoze Public License",
     ],
     keywords='web wsgi javascript pyramid extdirect',
