@@ -59,7 +59,6 @@ The minimum requirement for pyramid_extdirect is to create an ExtDirect API and 
 
     from pyramid.config import Configurator
     from exampleapp.resources import Root
-    from pyramid_extdirect import includeme
 
     def main(global_config, **settings):
         """ This function returns a Pyramid WSGI application.
@@ -70,7 +69,7 @@ The minimum requirement for pyramid_extdirect is to create an ExtDirect API and 
                         renderer='exampleapp:templates/mytemplate.pt')
         config.add_static_view('static', 'exampleapp:static')
         # let pyramid_extdirect create all the needed views automatically
-        includeme(config)
+        config.include('pyramid_extdirect')
         # scan your code once to make sure the @extdirect_method decorators
         # are picked up
         config.scan()
