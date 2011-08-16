@@ -55,34 +55,36 @@ code in Pyramid:
 Usage example:
 --------------
 
-We need to add the ``pyramid_extdirect`` meta.zcml to our applications configure.zcml
-so we're able to use the ``<extdirect ... />`` configuration directive::
+The minimum requirement for pyramid_extdirect is to create an ExtDirect API and Router::
 
-    <configure xmlns="http://pylonshq.com/pyramid">
+    from pyramid.config import Configurator
+    from exampleapp.resources import Root
+    from pyramid_extdirect import includeme
 
-      <include package="pyramid.includes" />
-      <include package="pyramid_extdirect" file="meta.zcml" />
+    def main(global_config, **settings):
+        """ This function returns a Pyramid WSGI application.
+        """
+        config = Configurator(root_factory=Root, settings=settings)
+        config.add_view('exampleapp.views.my_view',
+                        context='exampleapp:resources.Root',
+                        renderer='exampleapp:templates/mytemplate.pt')
+        config.add_static_view('static', 'exampleapp:static')
+        # let pyramid_extdirect create all the needed views automatically
+        includeme(config)
+        # scan your code once to make sure the @extdirect_method decorators
+        # are picked up
+        config.scan()
+        return config.make_wsgi_app()
 
-      <extdirect
-        api_name="extapi"
-        api_path="extdirect-api.js"
-        router_name="extrouter"
-        router_path="extdirect-router"
-        namespace="MyApp"
-        descriptor="MyApp.REMOTE_API"
-        permission="view"
-        package="."
-        />
+After this you can decorate arbitrary functions or class methods using @extdirect_method::
 
-        <!-- ... -->
-    </configure>
+    @extdirect_method(action='SomeAction')
+    def do_stuff(a, b, c):
+        return a + b + c
 
-You **have** to define ``api_name``/``api_path`` and ``router_name``/``router_path``
-(both are used to create vanilla Pyramid views to the API renderer and ExtDirect router) and
-the package parameter, which is used to scan the passed packaged/module for decorators (see below).
-
-Define an application root and a set of controllers to be mapped as actions/methods (first approach),
-the application root is the object returned by your Pyramid `root factory`_. Here's how it might look::
+Or, if you'd like to group your methods into classes (actions), you can define an application
+root and a set of controllers to be mapped as actions/methods, the application root is the
+object returned by your Pyramid `root factory`_. Here's how it might look::
 
     class AppRoot(object):
         __name__ = None
@@ -140,17 +142,6 @@ return a JSON serializable dict/list/string/number/etc.) and if found, this meth
 used to decode an instance to its JSONable version.
 You can define a ``__extdirect_settings__`` property in a class to define a default
 ``action`` and ``permission``, so in the example above we could also just use ``@extdirect_method()``.
-
-Using the second approach (without direct class/method mapping in python) we'd just
-create a module (or even a package) with decorated functions instead of classes,
-the code below would export exactly the same API to ExtDirect as the one from above::
-
-    from pyramid_extdirect import extdirect_method
-
-    @extdirect_method(action='Grids')
-    def loadGridData(params):
-        # load grid and return s.th.
-
 
 Sometimes you need to use the upload features of ExtDirect. Since uploads cannot
 be done using AJAX (through JSON-encoded request body) Ext does a little trick
