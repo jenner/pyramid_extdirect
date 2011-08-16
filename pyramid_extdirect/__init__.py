@@ -29,15 +29,6 @@ FORM_DATA_KEYS = frozenset([
 # is not a DOM node)
 FORM_SUBMIT_RESPONSE_TPL = '<html><body><textarea>%s</textarea></body></html>'
 
-entitydefs_reverse = dict((v, "&%s;" % k) for (k, v) in entitydefs.iteritems())
-
-
-def _chars2entity(text):
-    return "".join(
-        entitydefs_reverse.get(char, char)
-        for char in text
-    )
-
 
 def _mk_cb_key(action_name, method_name):
     return action_name + '#' + method_name
@@ -227,8 +218,7 @@ class Extdirect(object):
                 ret = ret[0]
             return (json.dumps(ret, cls=JsonReprEncoder), False)
         ret = ret[0] # form data cannot be batched
-        s = json.dumps(ret, cls=JsonReprEncoder)
-        s = _chars2entity(s)
+        s = json.dumps(ret, cls=JsonReprEncoder).replace("&quot;", r"\&quot;");
         return (FORM_SUBMIT_RESPONSE_TPL % (s,), True)
 
 
