@@ -130,4 +130,4 @@ class TestPyramidExtDirect(unittest.TestCase):
         request = testing.DummyRequest(params=params, post=post)
         response, is_form_data = util.route(request)
         self.failUnless(is_form_data)
-        self.failUnless('&quot;result&quot;: {&quot;success&quot;: true}' in response)
+        self.failUnless('"result": {"success": true}' in response)
