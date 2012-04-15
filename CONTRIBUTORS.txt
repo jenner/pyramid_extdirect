@@ -3,4 +3,4 @@ Contributors
 
 - Igor Stroh
 - Manuel Hermann
-
+- breathe (github.com/breathe)

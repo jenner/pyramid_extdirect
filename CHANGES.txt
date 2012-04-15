@@ -1,5 +1,9 @@
 repoze.bfg.extdirect Changelog
 ==============================
+0.3.1
+----------------
+Added pyramid debug toolbar support (thanks github.com/breath)
+
 0.3
 ----------------
 Renamed project to pyramid_extdirect
