@@ -5,11 +5,11 @@ Introduction:
 -------------
 
 This `pyramid`_ plugin provides a router for the `ExtDirect Sencha`_ API
-included in `ExtJS 3.x`_ .
+included in `ExtJS`_ .
 
 .. _`pyramid`: http://docs.pylonsproject.org/docs/pyramid.html
 .. _`ExtDirect Sencha`: http://extjs.com/products/extjs/direct.php
-.. _`ExtJS 3.x`: http://www.sencha.com/
+.. _`ExtJS 3.x`: http://www.sencha.com/products/extjs/
 
 
 ExtDirect allows to run server-side callbacks directly through JavaScript without
