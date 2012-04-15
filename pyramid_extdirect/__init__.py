@@ -71,6 +71,14 @@ class Extdirect(object):
     If the ``descriptor`` argument is passed it's used as ExtDirect
     API descriptor name (default is Ext.app.REMOTING_API).
 
+    If ``expose_exceptions`` argument is set to True the exception
+    traceback will be exposed in the response object. WARNING this
+    is potentially dangeerous, do not use in production environments.
+
+    The ``debug_mode`` argument will create a 'message' key in the
+    response object pointing to a structure that can be used in pyramid
+    debug toolbar.
+
     See http://www.sencha.com/products/js/direct.php for further infos.
 
     The optional ``expose_exceptions`` argument controls the output of
@@ -82,7 +90,9 @@ class Extdirect(object):
 
     def __init__(self, api_path="extdirect-api.js",
                  router_path="extdirect-router", namespace='Ext.app',
-                 descriptor='Ext.app.REMOTING_API', expose_exceptions=True, debug_mode=False):
+                 descriptor='Ext.app.REMOTING_API',
+                 expose_exceptions=True,
+                 debug_mode=False):
         self.api_path = api_path
         self.router_path = router_path
         self.namespace = namespace
@@ -204,19 +214,22 @@ class Extdirect(object):
                 }
 
             if self.debug_mode:
-                # if pyramid_debugtoolbar is enabled, generate an interactive page and include the url to access it
-                # in the ext direct Exception response text
+                # if pyramid_debugtoolbar is enabled, generate an interactive page
+                # and include the url to access it in the ext direct Exception response text
                 from pyramid_debugtoolbar.tbtools import get_traceback
                 from pyramid_debugtoolbar.utils import EXC_ROUTE_NAME
                 import sys
                 exc_history = request.exc_history
                 if exc_history is not None:
-                    tb = get_traceback(info=sys.exc_info(), skip=1, show_hidden_frames=False, ignore_system_exceptions=True)
+                    tb = get_traceback(info=sys.exc_info(),
+                            skip=1,
+                            show_hidden_frames=False,
+                            ignore_system_exceptions=True)
                     for frame in tb.frames:
                         exc_history.frames[frame.id] = frame
                     exc_history.tracebacks[tb.id] = tb
 
-                    qs = {'token':exc_history.token, 'tb':str(tb.id)}
+                    qs = {'token': exc_history.token, 'tb': str(tb.id)}
                     msg = 'Exception: traceback url: %s'
                     exc_url = request.route_url(EXC_ROUTE_NAME, _query=qs)
                     exc_msg = msg % (exc_url)
