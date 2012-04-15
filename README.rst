@@ -9,7 +9,7 @@ included in `ExtJS`_ .
 
 .. _`pyramid`: http://docs.pylonsproject.org/docs/pyramid.html
 .. _`ExtDirect Sencha`: http://extjs.com/products/extjs/direct.php
-.. _`ExtJS 3.x`: http://www.sencha.com/products/extjs/
+.. _`ExtJS`: http://www.sencha.com/products/extjs/
 
 
 ExtDirect allows to run server-side callbacks directly through JavaScript without
