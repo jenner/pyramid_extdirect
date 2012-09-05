@@ -151,11 +151,21 @@ class Extdirect(object):
         return self.actions[action][key]
 
     def _get_api_dict(self, request):
+        all_actions = self.get_actions()
+        actions = dict()
+        # filter returned actions in case there's an 'actions' request param
+        if 'actions' in request.params:
+            action_names = set([an for an in request.params['actions'].split(',') if an.strip()])
+            for action in all_actions:
+                if action in action_names:
+                    actions[action] = all_actions[action]
+        else:
+            actions = all_actions
         return dict(
             url = request.application_url + '/' + self.router_path,
             type = 'remoting',
             namespace = self.namespace,
-            actions = self.get_actions()
+            actions = actions
         )
 
     def dump_api(self, request):
