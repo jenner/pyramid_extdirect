@@ -181,14 +181,18 @@ class Extdirect(object):
 
         append_request = settings.get('request_as_last_param', False)
         permission_ok = True
+        context = request.root
+
         if hasattr(callback, "im_class"):
             cls = callback.im_class
             instance = cls(request)
             params.insert(0, instance)
-            if permission is not None:
-                permission_ok = has_permission(permission, instance, request)
+            context = instance
         elif append_request:
             params.append(request)
+
+        if permission is not None:
+            permission_ok = has_permission(permission, context, request)
 
         try:
             if not permission_ok:
