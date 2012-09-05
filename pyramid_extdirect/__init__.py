@@ -48,6 +48,10 @@ class IExtdirect(Interface):
     pass
 
 
+class AccessDeniedException(Exception):
+    """ marker exception for failed permission checks """
+    pass
+
 class Extdirect(object):
     """
     Handles ExtDirect API respresentation and routing.
@@ -188,7 +192,7 @@ class Extdirect(object):
 
         try:
             if not permission_ok:
-                raise Exception("Access denied")
+                raise AccessDeniedException("Access denied")
             ret["result"] = callback(*params)
         except Exception, e:
             # Let a user defined view for specific exception prevent returning
