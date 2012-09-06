@@ -1,5 +1,10 @@
 repoze.bfg.extdirect Changelog
 ==============================
+0.3.2
+----------------
+- Added permissions check for extdirect_method decorated functions (vs. methods)
+- Added actions filter for extdirect api route  
+
 0.3.1
 ----------------
 Added pyramid debug toolbar support (thanks github.com/breath)
