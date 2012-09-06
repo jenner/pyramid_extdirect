@@ -1,4 +1,4 @@
-repoze.bfg.extdirect Changelog
+pyramid_extdirect Changelog
 ==============================
 0.3.2
 ----------------
