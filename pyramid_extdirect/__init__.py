@@ -37,6 +37,10 @@ def _mk_cb_key(action_name, method_name):
 class JsonReprEncoder(json.JSONEncoder):
     """ a convenience wrapper for classes that support json_repr() """
     def default(self, obj):
+        if isinstance(obj, Response) and obj.content_type == 'application/json':
+            # return decoded response body in case it's an already
+            # rendered exception view
+            return json.loads(obj.unicode_body)
         jr = getattr(obj, 'json_repr', None)
         if jr is None:
             return super(JsonReprEncoder, self).default(obj)
@@ -209,6 +213,7 @@ class Extdirect(object):
                 raise AccessDeniedException("Access denied")
             ret["result"] = callback(*params)
         except Exception, e:
+            ret["type"] = "exception"
             # Let a user defined view for specific exception prevent returning
             # a server error.
             exception_view = render_view_to_response(e, request)
@@ -216,7 +221,6 @@ class Extdirect(object):
                 ret["result"] = exception_view
                 return ret
 
-            ret["type"] = "exception"
             if self.expose_exceptions:
                 ret["result"] = {
                     'error': True,
