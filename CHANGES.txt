@@ -1,5 +1,9 @@
 pyramid_extdirect Changelog
 ==============================
+0.4.0
+----------------
+- Fixed user-defined exfception views handling
+
 0.3.2
 ----------------
 - Added permissions check for extdirect_method decorated functions (vs. methods)
