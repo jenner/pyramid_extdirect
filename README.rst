@@ -90,10 +90,10 @@ this is needed to make sure your methods have access to ``request`` at any time:
         # it's already defined via __extdirect_settings__
         @extdirect_method(permission='view', method_name='loadAll')
         def load_all(self, params):
-            // params is a simple dict that will contain the
-            // paging and sorting options as well as any other
-            // extra parameters (defined using proxy.extraParams
-            // your store config)
+            # params is a simple dict that will contain the
+            # paging and sorting options as well as any other
+            # extra parameters (defined using proxy.extraParams
+            # your store config)
             users = []
             for user in users_db.fetch_all():
                 users.append({
