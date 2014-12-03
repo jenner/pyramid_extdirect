@@ -9,7 +9,7 @@ CHANGES = open(os.path.join(here, 'CHANGES.txt')).read()
 requires = ['pyramid', 'venusian']
 
 setup(name='pyramid_extdirect',
-    version='0.4.0',
+    version='0.5.0',
     description='ExtDirect Implementation for Pyramid',
     long_description=README + '\n\n' +  CHANGES,
     classifiers=[
