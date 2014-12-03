@@ -47,14 +47,22 @@ class TestPyramidExtDirect(unittest.TestCase):
         self.assertEqual(dec._settings["action"], 'SomeAction')
 
     def test_register_class_method(self):
-        dec = self._makeOne(action='MyAction')
+        from pyramid_extdirect import IExtdirect, _mk_cb_key
+        action_name = 'MyClass'
+        meth_name = 'my_foo'
+        dec = self._makeOne(action=action_name)
         class MyClass(object):
             @dec
             def my_foo(self):
                 pass
-        dec.register(self, 'my_foo', MyClass.my_foo)
-        self.assertEqual(dec._settings["original_name"], 'my_foo')
-        self.assertEqual(dec._settings["action"], 'MyAction')
+        dec.register(self, meth_name, MyClass)
+
+        extdirect = self.config.registry.getUtility(IExtdirect)
+        key = _mk_cb_key(action_name, meth_name)
+
+        self.assertEqual(extdirect.actions[action_name][key]['class'], MyClass)
+        self.assertEqual(dec._settings["original_name"], meth_name)
+        self.assertEqual(dec._settings["action"], action_name)
 
     def test_api_dict(self):
         dec = self._makeOne(action='MyAction')
@@ -104,7 +112,7 @@ class TestPyramidExtDirect(unittest.TestCase):
         dec.register(self, 'foo', foo)
 
         util = self._get_util()
-        body = """{"action": "SimpleAction", "method": "foo", "data":["sample request"], "tid":0}"""
+        body = b"""{"action": "SimpleAction", "method": "foo", "data":["sample request"], "tid":0}"""
         request = DummyAjaxRequest(body=body)
         response, is_form_data = util.route(request)
         self.failUnless('sample request was handled' in response)

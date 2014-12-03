@@ -1,14 +1,18 @@
 from collections import defaultdict
-from htmlentitydefs import entitydefs
 import json
 import traceback
 
 from pyramid.security import has_permission
 from pyramid.view import render_view_to_response
 from webob import Response
-from zope.interface import implements
+from zope.interface import implementer
 from zope.interface import Interface
 import venusian
+
+try:
+    from html.entities import entitydefs  # Python 3
+except ImportError:
+    from htmlentitydefs import entitydefs  # Python 2
 
 __version__ = "0.3.2"
 
@@ -56,6 +60,7 @@ class AccessDeniedException(Exception):
     """ marker exception for failed permission checks """
     pass
 
+@implementer(IExtdirect)
 class Extdirect(object):
     """
     Handles ExtDirect API respresentation and routing.
@@ -93,8 +98,6 @@ class Extdirect(object):
     an ExtDirect call - if ``True``, the router will provide additional
     information about exceptions.
     """
-
-    implements(IExtdirect)
 
     def __init__(self, api_path="extdirect-api.js",
                  router_path="extdirect-router", namespace='Ext.app',
@@ -197,9 +200,8 @@ class Extdirect(object):
         permission_ok = True
         context = request.root
 
-        if hasattr(callback, "im_class"):
-            cls = callback.im_class
-            instance = cls(request)
+        if settings['class']:
+            instance = settings['class'](request)
             params.insert(0, instance)
             context = instance
         elif append_request:
@@ -212,7 +214,7 @@ class Extdirect(object):
             if not permission_ok:
                 raise AccessDeniedException("Access denied")
             ret["result"] = callback(*params)
-        except Exception, e:
+        except Exception as e:
             ret["type"] = "exception"
             # Let a user defined view for specific exception prevent returning
             # a server error.
@@ -290,7 +292,7 @@ class extdirect_method(object):
         )
 
     def __call__(self, wrapped):
-        original_name = wrapped.func_name
+        original_name = wrapped.__name__
         self._settings["original_name"] = original_name
         if self._settings["method_name"] is None:
             self._settings["method_name"] = original_name
@@ -308,16 +310,18 @@ class extdirect_method(object):
 
         class_context = isinstance(ob, type)
 
+        settings['class'] = None
         if class_context:
+            settings['class'] = ob
             callback = getattr(ob, settings["original_name"])
-            numargs = callback.im_func.func_code.co_argcount
+            numargs = callback.__code__.co_argcount
             # instance var doesn't count
             numargs -= 1
         else:
             if settings['action'] is None:
                 raise ValueError("Decorated function has no action (name)")
             callback = ob
-            numargs = callback.func_code.co_argcount
+            numargs = callback.__code__.co_argcount
 
         if numargs and settings['request_as_last_param']:
             numargs -= 1
@@ -356,11 +360,10 @@ def parse_extdirect_form_submit(request):
     action = params.get('extAction')
     method = params.get('extMethod')
     tid = params.get('extTID')
-    data = dict(
-        (key, value)
-        for (key, value) in params.iteritems()
-        if key not in FORM_DATA_KEYS
-    )
+    data = dict()
+    for key in params:
+        if key not in FORM_DATA_KEYS:
+            data[key] = params[key]
     return [(action, method, [data], tid)]
 
 
@@ -370,7 +373,7 @@ def parse_extdirect_request(request):
         which are provided by an AJAX request
     """
     body = request.body
-    decoded_body = json.loads(body)
+    decoded_body = json.loads(body.decode())
     ret = []
     if not isinstance(decoded_body, list):
         decoded_body = [decoded_body]
