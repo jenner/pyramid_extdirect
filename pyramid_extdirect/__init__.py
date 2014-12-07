@@ -1,3 +1,4 @@
+__version__ = '0.5.0'
 from collections import defaultdict
 import json
 import traceback
@@ -14,7 +15,6 @@ try:
 except ImportError:
     from htmlentitydefs import entitydefs  # Python 2
 
-__version__ = "0.3.2"
 
 
 # form parameters sent by ExtDirect when using a form-submit
@@ -29,12 +29,13 @@ FORM_DATA_KEYS = frozenset([
 
 # response to a file upload cannot be return as application/json, ExtDirect
 # defines a special html response body for this use case where the response
-# data is added to a textarea for faster JS-side decoding (since etxtarea text
+# data is added to a textarea for faster JS-side decoding (since textarea text
 # is not a DOM node)
 FORM_SUBMIT_RESPONSE_TPL = '<html><body><textarea>%s</textarea></body></html>'
 
 
 def _mk_cb_key(action_name, method_name):
+    """ helper function to create a unique actions dict key """
     return action_name + '#' + method_name
 
 
