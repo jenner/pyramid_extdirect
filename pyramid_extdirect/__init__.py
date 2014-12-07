@@ -31,7 +31,7 @@ FORM_DATA_KEYS = frozenset([
 # defines a special html response body for this use case where the response
 # data is added to a textarea for faster JS-side decoding (since textarea text
 # is not a DOM node)
-FORM_SUBMIT_RESPONSE_TPL = '<html><body><textarea>%s</textarea></body></html>'
+FORM_SUBMIT_RESPONSE_TPL = '<html><body><textarea>{}</textarea></body></html>'
 
 
 def _mk_cb_key(action_name, method_name):
@@ -101,7 +101,8 @@ class Extdirect(object):
     """
 
     def __init__(self, api_path="extdirect-api.js",
-                 router_path="extdirect-router", namespace='Ext.app',
+                 router_path="extdirect-router",
+                 namespace='Ext.app',
                  descriptor='Ext.app.REMOTING_API',
                  expose_exceptions=True,
                  debug_mode=False):
@@ -152,10 +153,10 @@ class Extdirect(object):
     def get_method(self, action, method):
         """ Returns a method's settings """
         if action not in self.actions:
-            raise KeyError("Invalid action: " + action)
+            raise KeyError("Invalid action: {}".format(action))
         key = _mk_cb_key(action, method)
         if key not in self.actions[action]:
-            raise KeyError("No such method in '%s': '%s':" % (action, method))
+            raise KeyError("No such method in '{}': '{}':".format(action, method))
         return self.actions[action][key]
 
     def _get_api_dict(self, request):
@@ -178,8 +179,10 @@ class Extdirect(object):
 
     def dump_api(self, request):
         """ Dumps all known remote methods """
-        return """Ext.ns('%s'); %s = %s;""" % \
-            (self.namespace, self.descriptor, json.dumps(self._get_api_dict(request)))
+        return "Ext.ns('{}'); {} = {};".format(self.namespace,
+            self.descriptor,
+            json.dumps(self._get_api_dict(request))
+        )
 
     def _do_route(self, action_name, method_name, params, trans_id, request):
         """ Performs routing, i.e. calls decorated methods/functions """
@@ -232,7 +235,7 @@ class Extdirect(object):
                     'stacktrace': traceback.format_exc()
                 }
             else:
-                message = 'Error executing %s.%s' % (action_name, method_name)
+                message = 'Error executing {}.{}'.format(action_name, method_name)
                 ret["result"] = {
                     'error': True,
                     'message': message
@@ -255,10 +258,8 @@ class Extdirect(object):
                     exc_history.tracebacks[tb.id] = tb
 
                     qs = {'token': exc_history.token, 'tb': str(tb.id)}
-                    msg = 'Exception: traceback url: %s'
                     exc_url = request.route_url(EXC_ROUTE_NAME, _query=qs)
-                    exc_msg = msg % (exc_url)
-                    ret["message"] = exc_msg
+                    ret['message'] = 'Exception: traceback url: {}'.format(exc_url)
         return ret
 
     def route(self, request):
@@ -275,8 +276,8 @@ class Extdirect(object):
                 ret = ret[0]
             return (json.dumps(ret, cls=JsonReprEncoder), False)
         ret = ret[0] # form data cannot be batched
-        s = json.dumps(ret, cls=JsonReprEncoder).replace("&quot;", r"\&quot;");
-        return (FORM_SUBMIT_RESPONSE_TPL % (s,), True)
+        form_data = json.dumps(ret, cls=JsonReprEncoder).replace("&quot;", r"\&quot;");
+        return (FORM_SUBMIT_RESPONSE_TPL.format(form_data), True)
 
 
 class extdirect_method(object):
@@ -403,13 +404,13 @@ def router_view(request):
 
 
 def includeme(config):
-    """Let extdirect be included by config.include()."""
+    """ Let extdirect be included by config.include(). """
     settings = config.registry.settings
     extdirect_config = dict()
     names = ("api_path", "router_path", "namespace", "descriptor",
              "expose_exceptions", "debug_mode")
     for name in names:
-        qname = "pyramid_extdirect.%s" % name
+        qname = "pyramid_extdirect.{}".format(name)
         value = settings.get(qname, None)
         if name == "expose_exceptions" or name == "debug_mode":
             value = (value == "true")
