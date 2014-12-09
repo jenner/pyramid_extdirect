@@ -15,5 +15,13 @@ Ext.define('App.model.User', {
     }, {
         name: 'description',
         type: 'string'
+    }, {
+        name: 'picture',
+        type: 'string'
+    }, {
+        // synthetic prop used to distinguish between new and existing records
+        name: 'isNew',
+        type: 'boolean',
+        defaultValue: false
     }]
 });

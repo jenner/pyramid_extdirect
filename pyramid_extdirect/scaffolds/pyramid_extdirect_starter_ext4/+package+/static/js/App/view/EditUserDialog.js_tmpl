@@ -1,0 +1,125 @@
+Ext.define('App.view.EditUserDialog', {
+    extend: 'Ext.window.Window',
+    alias: 'widget.edit-user-dialog',
+    requires: [
+        'App.view.TitlesCombo',
+    ],
+    constrain: true,
+    modal: true,
+    layout: 'fit',
+    width: 400,
+    minWidth: 400,
+    height: 400,
+    minHeight: 400,
+    defaultFocus: 'nameField',
+    emptyPicPlaceholder: '<i class="fa fa-smile-o empty-pic">&#160;</i>',
+    picPlaceholder: new Ext.Template('<img src="{src}" border="false" width="80"/>'),
+    config: {
+        userRecord: null
+    },
+    items: [{
+        xtype: 'form',
+        api: {
+            submit: {{project}}.Users.edit
+        },
+        layout: {
+            type: 'vbox',
+            align: 'stretch'
+        },
+        bodyPadding: 5,
+        defaults: {
+            labelAlign: 'top',
+            msgTarget: 'side'
+        },
+        items: [{
+            xtype: 'container',
+            layout: {
+                type: 'hbox',
+                align: 'stretch'
+            },
+            items: [{
+                xtype: 'container',
+                layout: {
+                    type: 'vbox',
+                    align: 'stretch'
+                },
+                items: [{
+                    xtype: 'box',
+                    itemId: 'imageBox',
+                    cls: 'empty-pic-ct',
+                    html: '',
+                    flex: 1
+                }, {
+                    hideLabel: true,
+                    buttonOnly: true,
+                    labelAlign: 'top',
+                    msgTarget: 'side',
+                    xtype: 'fileuploadfield',
+                    buttonText: 'Upload new picture...',
+                    name: 'picture'
+                }]
+            }, {
+                xtype: 'container',
+                flex: 1,
+                layout: {
+                    type: 'vbox',
+                    align: 'stretch'
+                },
+                defaults: {
+                    labelAlign: 'top',
+                    msgTarget: 'side'
+                },
+                items: [{
+                    xtype: 'textfield',
+                    fieldLabel: 'Name',
+                    allowBlank: false,
+                    itemId: 'nameField',
+                    name: 'name'
+                }, {
+                    xtype: 'my-titles-combo',
+                    fieldLabel: 'Title',
+                    name: 'title_id'
+                }]
+            }]
+        }, {
+            xtype: 'textarea',
+            fieldLabel: 'Description',
+            name: 'description',
+            flex: 1
+        }, {
+            xtype: 'hidden',
+            name: 'isNew'
+        }, {
+            xtype: 'hidden',
+            name: 'id'
+        }],
+        buttonAlign: 'center',
+        buttons: [{
+            text: 'OK',
+            itemId: 'okButton',
+            formBind: true,
+            disabled: true
+        }, {
+            text: 'Cancel',
+            itemId: 'cancelButton'
+        }]
+    }],
+
+    initComponent: function() {
+        var me = this;
+        me.callParent();
+        var record = me.getUserRecord(),
+            imageBox = me.down('#imageBox');
+        me.down('form').loadRecord(record);
+        if (record.get('picture')) {
+            imageBox.update(me.picPlaceholder.apply({
+                src: '/picture/' + record.get('id') + '?ts=' + (new Date()).getTime()
+            }));
+        } else {
+            imageBox.update(me.emptyPicPlaceholder);
+        }
+        me.down('fileuploadfield').on('change', function(filefield) {
+            me.fireEvent('picturechange', filefield, filefield.getValue(), me);
+        });
+    }
+});

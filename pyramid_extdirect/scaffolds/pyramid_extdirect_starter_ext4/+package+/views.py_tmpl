@@ -1,5 +1,22 @@
+from pyramid.httpexceptions import HTTPNotFound
 from pyramid.view import view_config
+from pyramid.response import FileResponse
+from .models import get_user
 
 @view_config(route_name='home', renderer='templates/home.pt')
-def my_view(request):
+def home_view(request):
     return {'project': '{{project}}'}
+
+@view_config(route_name='picture')
+def picture_view(request):
+    handler = request.registry.image_handler
+    uid = int(request.matchdict['user_id'])
+    user = get_user(uid)
+    if not user:
+        raise HTTPNotFound('Invalid user id: {}'.format(uid))
+    pic_path = handler.get_picture_path(user)
+    if not pic_path:
+        raise HTTPNotFound('User {} has no picture yet!'.format(uid))
+    return FileResponse(pic_path,
+        request=request,
+        content_type=handler.get_picture_type(user))

@@ -36,11 +36,14 @@ Ext.define('App.controller.Main', {
             'my-users-grid #deleteButton': {
                 click: me.confirmDeleteUser
             },
+            'edit-user-dialog fileuploadfield': {
+                change: function(filefield) {
+                    console.log("self fielfield", filefield.getValue());
+                }
+            },
             'edit-user-dialog': {
-                show: function(dialog) {
-                    var form = dialog.down('form');
-                    console.log("rec", dialog.getUserRecord());
-                    form.loadRecord(dialog.getUserRecord());
+                picturechange: function(filefield) {
+                    console.log("fielfield", filefield.getValue());
                 }
             },
             'edit-user-dialog #okButton': {
@@ -66,7 +69,9 @@ Ext.define('App.controller.Main', {
         var me = this,
             isNew = !userRecord;
         if (isNew) {
-            userRecord = Ext.create('App.model.User');
+            userRecord = Ext.create('App.model.User', {
+                isNew: true
+            });
         }
         var editDialog = Ext.widget('edit-user-dialog', {
             title: isNew ? 'Create new user' : 'Edit user ' + userRecord.get('id'),
@@ -79,17 +84,32 @@ Ext.define('App.controller.Main', {
         var me = this,
             form = dialog.down('form').getForm(),
             record = form.updateRecord().getRecord(),
-            isNew = record.phantom;
+            isNew = record.phantom,
+            titlesStore = me.getTitlesStore(),
+            titleRecordIndex = titlesStore.findExact('id', record.get('title_id')),
+            titleRecord = titlesStore.getAt(titleRecordIndex);
+        // update title depending on title_id
+        record.set('title', titleRecord.get('title'));
+        form.submit({
+            success: function(frm, action) {
+                // update record with server data
+                record.set(action.result.user);
+                record.set('isNew', false);
+                record.commit();
+                if (isNew) {
+                    me.getUsersStore().add(record);
+                }
+                dialog.close();
+                Ext.Msg.alert('Success', action.result.msg);
+            },
+            failure: function(frm, action) {
+                Ext.Msg.alert('Failure', action.result.msg);
+            }
+        });
+        return;
         // decide which CRUD method to use
         var method = isNew ? {{project}}.Users.create :  {{project}}.Users.update;
         method(record.data, function(response) {
-            // update record with server data
-            record.set(response);
-            record.commit();
-            if (isNew) {
-                me.getUsersStore().add(record);
-            }
-            dialog.close();
         });
     },
 

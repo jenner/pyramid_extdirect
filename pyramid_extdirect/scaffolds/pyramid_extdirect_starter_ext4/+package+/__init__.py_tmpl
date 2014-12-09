@@ -1,14 +1,18 @@
 from pyramid.config import Configurator
 from .models import bootstrap
+from .images import ImageHandler
 
 def main(global_config, **settings):
     """ This function returns a Pyramid WSGI application.
     """
     config = Configurator(settings=settings)
+
+    config.registry.image_handler = ImageHandler(settings['{{package}}.images_base_path'])
     config.include('pyramid_chameleon')
     config.include('pyramid_extdirect')
     config.add_static_view('static', 'static', cache_max_age=3600)
     config.add_route('home', '/')
+    config.add_route('picture', '/picture/{user_id}')
     config.scan()
     bootstrap()
     return config.make_wsgi_app()

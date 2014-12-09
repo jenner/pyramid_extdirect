@@ -34,34 +34,26 @@ def get_count():
 
 def bootstrap():
     """ add some users to our "DB" """
-    add_user(User('John Doe', 'Dr'))
-    add_user(User('Hans Dampf', 'Mr'))
-    add_user(User('Igor Stroh', TITLES[35]))
+    add_user(User('John Doe', 0))
+    add_user(User('Hans Dampf', 0))
+    add_user(User('Igor Stroh', 35))
 
 class User(object):
 
-    def __init__(self, name, title=None, description=None):
+    def __init__(self, name, title_id, description=None):
+        self.id = None
         self.name = name
-        if title not in TITLES:
-            title = 'Mr'
-        self.title_id = TITLES.index(title)
+        self.title_id = int(title_id)
         self.description = description
         self.picture = None
-        self.id = None
 
     @property
     def title(self):
-        return TITLES[self.title_id]
-
-    @title.setter
-    def set_title(self, title):
-        old = self.title_id
-        if title in TITLES:
-            self.title_id = TITLES.index(title)
+        return TITLES[int(self.title_id)]
 
     def json_repr(self):
         ret = self.__dict__
-        ret['title'] = TITLES[ret['title_id']]
+        ret['title'] = self.title
         return ret
 
 TITLES = (
