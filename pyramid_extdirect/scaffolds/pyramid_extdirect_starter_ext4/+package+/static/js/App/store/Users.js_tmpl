@@ -1,0 +1,20 @@
+Ext.define('App.store.Users', {
+    extend: 'Ext.data.Store',
+    model: 'App.model.User',
+    autoDestroy: false,
+    pageSize: 25,
+    proxy: {
+        type: 'direct',
+        directFn: {{project}}.Users.loadAll,
+        simpleSortMode: true,
+        reader: {
+            type: 'json',
+            totalProperty: 'total',
+            rootProperty: 'users'
+        }
+    },
+    folderSort: true,
+    autoLoad: true,
+    remoteSort: true,
+    sorters: {property: 'id', direction: 'ASC'}
+});

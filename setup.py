@@ -30,5 +30,7 @@ setup(name='pyramid_extdirect',
     test_suite="pyramid_extdirect",
     install_requires=requires,
     entry_points="""\
+    [pyramid.scaffold]
+    xd-ext4.x-starter=pyramid_extdirect.scaffolds:PyramidExtDirectStarterProjectTemplate_Ext4
     """
 )

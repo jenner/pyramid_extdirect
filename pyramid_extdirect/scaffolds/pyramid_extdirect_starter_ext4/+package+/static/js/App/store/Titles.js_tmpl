@@ -1,0 +1,12 @@
+Ext.define('App.store.Titles', {
+    extend: 'Ext.data.Store',
+    fields: ['id', 'title'],
+    proxy: {
+        type: 'direct',
+        directFn: {{project}}.Utils.getTitles,
+        reader: {
+            type: 'json'
+        }
+    },
+    autoLoad: true
+});

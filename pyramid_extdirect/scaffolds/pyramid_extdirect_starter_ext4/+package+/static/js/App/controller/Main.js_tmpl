@@ -1,0 +1,109 @@
+Ext.define('App.controller.Main', {
+    extend: 'Ext.app.Controller',
+
+    stores: ['Users', 'Titles'],
+    models: ['User'],
+
+    refs: [{
+        ref: 'usersGrid',
+        selector: 'my-users-grid'
+    }],
+
+    init: function() {
+        var me = this;
+        me.control({
+            'my-users-grid': {
+                selectionchange: function(selModel, records) {
+                    var grid = me.getUsersGrid(),
+                        selected = me.getSelectedUser();
+                    grid.down('#editButton').setDisabled(!selected);
+                    grid.down('#deleteButton').setDisabled(!selected);
+                },
+                itemdblclick: function(view, record) {
+                    me.showEditDialog(record);
+                }
+            },
+            'my-users-grid #addButton': {
+                click: function(button) {
+                    me.showEditDialog();
+                }
+            },
+            'my-users-grid #editButton': {
+                click: function(button) {
+                    me.showEditDialog(me.getSelectedUser());
+                }
+            },
+            'my-users-grid #deleteButton': {
+                click: me.confirmDeleteUser
+            },
+            'edit-user-dialog': {
+                show: function(dialog) {
+                    var form = dialog.down('form');
+                    console.log("rec", dialog.getUserRecord());
+                    form.loadRecord(dialog.getUserRecord());
+                }
+            },
+            'edit-user-dialog #okButton': {
+                click: function(button) {
+                    me.saveUser(button.up('edit-user-dialog'));
+                }
+            },
+            'edit-user-dialog #cancelButton': {
+                click: function(button) {
+                    button.up('edit-user-dialog').close();
+                }
+            }
+        });
+    },
+
+    getSelectedUser: function() {
+        var me = this,
+            selModel = me.getUsersGrid().getSelectionModel();
+        return selModel.hasSelection() ? selModel.getSelection()[0] : null;
+    },
+
+    showEditDialog: function(userRecord) {
+        var me = this,
+            isNew = !userRecord;
+        if (isNew) {
+            userRecord = Ext.create('App.model.User');
+        }
+        var editDialog = Ext.widget('edit-user-dialog', {
+            title: isNew ? 'Create new user' : 'Edit user ' + userRecord.get('id'),
+            userRecord: userRecord
+        });
+        editDialog.show();
+    },
+
+    saveUser: function(dialog) {
+        var me = this,
+            form = dialog.down('form').getForm(),
+            record = form.updateRecord().getRecord(),
+            isNew = record.phantom;
+        // decide which CRUD method to use
+        var method = isNew ? {{project}}.Users.create :  {{project}}.Users.update;
+        method(record.data, function(response) {
+            // update record with server data
+            record.set(response);
+            record.commit();
+            if (isNew) {
+                me.getUsersStore().add(record);
+            }
+            dialog.close();
+        });
+    },
+
+    confirmDeleteUser: function() {
+        var me = this,
+            userRecord = me.getSelectedUser(),
+            message = 'Are you sure you want to delete user "' + userRecord.get('name') + '"';
+        
+        Ext.Msg.confirm('Really delete?', message, function(button) {
+            if (button === 'yes') {
+                {{project}}.Users.remove(userRecord.get('id'), function(response) {
+                    me.getUsersStore().remove(userRecord);
+                });
+            }
+        });
+    }
+});

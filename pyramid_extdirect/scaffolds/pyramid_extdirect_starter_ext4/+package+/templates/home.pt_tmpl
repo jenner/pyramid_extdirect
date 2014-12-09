@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html lang="${request.locale_name}">
+<head>
+    <title>{{project}}</title>
+    <link rel="stylesheet" type="text/css" href="http://cdn.sencha.com/ext/gpl/5.0.0/build/packages/ext-theme-neptune/build/resources/ext-theme-neptune-all.css" />
+    <link rel="stylesheet" type="text/css" href="${request.static_url('{{package}}:static/css/main.css')}" />
+    <script type="text/javascript" src="http://cdn.sencha.com/ext/gpl/5.0.0/build/ext-all-debug.js"></script> 
+    <script type="text/javascript" src="http://cdn.sencha.com/ext/gpl/5.0.0/build/packages/ext-theme-neptune/build/ext-theme-neptune.js"></script>
+    <script type="text/javascript" src="${request.route_url('extapi')}"></script>
+    <script type ="text/javascript" src="${request.static_url('{{package}}:static/js/app.js')}"></script>
+    </head>
+    <body></body>
+</html>
