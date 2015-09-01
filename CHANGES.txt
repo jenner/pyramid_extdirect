@@ -1,5 +1,11 @@
 pyramid_extdirect Changelog
 ==============================
+0.5.1
+----------------
+- Added optional json_encoder argument to Extdirect constructor
+  to allow for providing a custom JSON serializer (e.g.
+  pyramid.renderers.JSON)
+
 0.5.0
 ----------------
 - We're now python3 compliant (thanks Fabien Coronis)
