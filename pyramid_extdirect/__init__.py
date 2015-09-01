@@ -1,4 +1,4 @@
-__version__ = '0.5.0'
+__version__ = '0.5.1'
 from collections import defaultdict
 import json
 import traceback
@@ -105,7 +105,8 @@ class Extdirect(object):
                  namespace='Ext.app',
                  descriptor='Ext.app.REMOTING_API',
                  expose_exceptions=True,
-                 debug_mode=False):
+                 debug_mode=False,
+                 json_encoder=JsonReprEncoder):
         self.api_path = api_path
         self.router_path = router_path
         self.namespace = namespace
@@ -113,6 +114,7 @@ class Extdirect(object):
         self.expose_exceptions = expose_exceptions
         self.debug_mode = debug_mode
         self.actions = defaultdict(dict)
+        self.json_encoder = json_encoder
 
     def add_action(self, action_name, **settings):
         """
@@ -274,9 +276,9 @@ class Extdirect(object):
         if not is_form_data:
             if len(ret) == 1:
                 ret = ret[0]
-            return (json.dumps(ret, cls=JsonReprEncoder), False)
+            return (json.dumps(ret, cls=self.json_encoder), False)
         ret = ret[0] # form data cannot be batched
-        form_data = json.dumps(ret, cls=JsonReprEncoder).replace("&quot;", r"\&quot;");
+        form_data = json.dumps(ret, cls=self.json_encoder).replace("&quot;", r"\&quot;");
         return (FORM_SUBMIT_RESPONSE_TPL.format(form_data), True)
 
 
@@ -408,12 +410,16 @@ def includeme(config):
     settings = config.registry.settings
     extdirect_config = dict()
     names = ("api_path", "router_path", "namespace", "descriptor",
-             "expose_exceptions", "debug_mode")
+             "expose_exceptions", "debug_mode", "json_encoder")
     for name in names:
         qname = "pyramid_extdirect.{}".format(name)
         value = settings.get(qname, None)
         if name == "expose_exceptions" or name == "debug_mode":
             value = (value == "true")
+        if name == "json_encoder":
+            from pyramid.path import DottedNameResolver
+            resolver = DottedNameResolver()
+            value = resolver.resolve(value)
         if value is not None:
             extdirect_config[name] = value
 
