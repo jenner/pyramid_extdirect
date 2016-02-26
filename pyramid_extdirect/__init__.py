@@ -416,7 +416,7 @@ def includeme(config):
         value = settings.get(qname, None)
         if name == "expose_exceptions" or name == "debug_mode":
             value = (value == "true")
-        if name == "json_encoder":
+        if name == "json_encoder" and value:
             from pyramid.path import DottedNameResolver
             resolver = DottedNameResolver()
             value = resolver.resolve(value)
