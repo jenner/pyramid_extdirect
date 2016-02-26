@@ -4,4 +4,5 @@ Contributors
 - Igor Stroh
 - Manuel Hermann
 - Fabien Coronis
+- Fabian Maier
 - breathe (github.com/breathe)

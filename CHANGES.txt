@@ -1,5 +1,10 @@
 pyramid_extdirect Changelog
 ==============================
+0.5.2
+----------------
+- Added error logging and fixed the issue when 'json_encoder'
+  wasn't provided in includeme(..) config (thanks Fabian Maier)
+
 0.5.1
 ----------------
 - Added optional json_encoder argument to Extdirect constructor
