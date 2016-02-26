@@ -1,6 +1,7 @@
 __version__ = '0.5.1'
 from collections import defaultdict
 import json
+import logging
 import traceback
 
 from pyramid.security import has_permission
@@ -16,6 +17,7 @@ except ImportError:
     from htmlentitydefs import entitydefs  # Python 2
 
 
+logger = logging.getLogger(__name__)
 
 # form parameters sent by ExtDirect when using a form-submit
 # see http://www.sencha.com/products/js/direct.php
@@ -228,6 +230,10 @@ class Extdirect(object):
             if exception_view is not None:
                 ret["result"] = exception_view
                 return ret
+
+            # Log Error
+            logger.error("{}: {}".format(str(e.__class__.__name__), e))
+            logger.info(traceback.format_exc())
 
             if self.expose_exceptions:
                 ret["result"] = {
