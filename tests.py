@@ -118,6 +118,47 @@ class TestPyramidExtDirect(unittest.TestCase):
         self.failUnless('sample request was handled' in response)
         self.failUnless(not is_form_data)
 
+    def test_simple_call_wo_params(self):
+        dec = self._makeOne(action='SimpleAction')
+        def foo():
+            return 'Heya!'
+        decorated = dec(foo)
+        dec.register(self, 'foo', foo)
+
+        util = self._get_util()
+        body = b"""{"action": "SimpleAction", "method": "foo", "data":null, "tid":0}"""
+        request = DummyAjaxRequest(body=body)
+        response, is_form_data = util.route(request)
+        self.failUnless('Heya!' in response)
+
+    def test_invalid_action(self):
+        dec = self._makeOne(action='SimpleAction')
+        def foo(param):
+            return param + ' was handled'
+        decorated = dec(foo)
+        dec.register(self, 'foo', foo)
+
+        util = self._get_util()
+        body = b"""{"action": "BogusAction", "method": "foo", "data":["sample request"], "tid":0}"""
+        request = DummyAjaxRequest(body=body)
+        self.assertRaisesRegexp(KeyError, "Invalid action: BogusAction", util.route, request)
+
+    def test_invalid_method(self):
+        dec = self._makeOne(action='SimpleAction')
+        def foo(param):
+            return param + ' was handled'
+        decorated = dec(foo)
+        dec.register(self, 'foo', foo)
+
+        util = self._get_util()
+        body = b"""{"action": "SimpleAction", "method": "bar", "data":["sample request"], "tid":0}"""
+        request = DummyAjaxRequest(body=body)
+        self.assertRaisesRegexp(
+            KeyError,
+            "No such method in 'SimpleAction': 'bar'",
+            util.route,
+            request)
+
     def test_file_upload(self):
         dec = self._makeOne(action='SimpleUpload', accepts_files=True)
         def do_upload(upload_data):
@@ -134,8 +175,55 @@ class TestPyramidExtDirect(unittest.TestCase):
             extUpload='1',
             extType='foo',
         )
-        post=dict(uploadedFile=dummy_file)
+        post = dict(uploadedFile=dummy_file)
         request = testing.DummyRequest(params=params, post=post)
-        response, is_form_data = util.route(request)
+        (response, is_form_data) = util.route(request)
         self.failUnless(is_form_data)
         self.failUnless('"result": {"success": true}' in response)
+
+    def test_extdirect_js_api(self):
+        dec = self._makeOne(action='MyAction')
+        class MyClass(object):
+            @dec
+            def my_foo(self):
+                pass
+        dec.register(self, 'my_foo', MyClass.my_foo)
+
+        dec2 = self._makeOne(action='OtherAction')
+        def bar(one, two): pass
+        decorated_bar = dec2(bar)
+        dec2.register(self, 'bar', bar)
+
+        dec3 = self._makeOne(action='UploadAction', accepts_files=True)
+        def upload(form): pass
+        decorated_upload = dec3(upload)
+        dec3.register(self, 'upload', upload)
+
+        util = self._get_util()
+        request = testing.DummyRequest()
+        result = util.dump_api(request)
+        self.assertIn('var Ext = Ext || {};\n', result)
+        self.assertIn('Ext.ns(\'Ext.app\'); Ext.app.REMOTING_API = {"url": "http://example.com/extdirect-router", "namespace": "Ext.app", "type": "remoting", "actions":', result)
+        self.assertIn('"MyAction": [{"name": "my_foo", "len": 1}]', result)
+        self.assertIn('"OtherAction": [{"name": "bar", "len": 2}]', result)
+        self.assertIn('"UploadAction": [{"formHandler": true, "name": "upload", "len": 1}]}', result)
+
+    def test_extdirect_js_api_w_actions(self):
+        dec = self._makeOne(action='MyAction')
+        class MyClass(object):
+            @dec
+            def my_foo(self):
+                pass
+        dec.register(self, 'my_foo', MyClass.my_foo)
+
+        dec2 = self._makeOne(action='OtherAction')
+        def bar(one, two): pass
+        decorated_bar = dec2(bar)
+        dec2.register(self, 'bar', bar)
+
+        util = self._get_util()
+        request = testing.DummyRequest(params={'actions': 'OtherAction'})
+        result = util.dump_api(request)
+        self.assertNotIn('"MyAction": [{"name": "my_foo", "len": 1}]', result)
+        self.assertIn('"OtherAction": [{"name": "bar", "len": 2}]', result)
+        self.assertNotIn('"UploadAction": [{"formHandler": true, "name": "upload", "len": 1}]}', result)

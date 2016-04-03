@@ -1,8 +1,14 @@
-__version__ = '0.5.1'
+"""
+ExtDirect implementation for Pyramid
+"""
 from collections import defaultdict
 import json
 import logging
 import traceback
+try:
+    from html.entities import entitydefs  # Python 3
+except ImportError:
+    from htmlentitydefs import entitydefs  # Python 2
 
 from pyramid.security import has_permission
 from pyramid.view import render_view_to_response
@@ -11,13 +17,10 @@ from zope.interface import implementer
 from zope.interface import Interface
 import venusian
 
-try:
-    from html.entities import entitydefs  # Python 3
-except ImportError:
-    from htmlentitydefs import entitydefs  # Python 2
+__version__ = '0.5.1'
 
 
-logger = logging.getLogger(__name__)
+LOG = logging.getLogger(__name__)
 
 # form parameters sent by ExtDirect when using a form-submit
 # see http://www.sencha.com/products/js/direct.php
@@ -35,6 +38,10 @@ FORM_DATA_KEYS = frozenset([
 # is not a DOM node)
 FORM_SUBMIT_RESPONSE_TPL = '<html><body><textarea>{}</textarea></body></html>'
 
+JS_API_TPL = """var Ext = Ext || {{}};
+Ext.ns('{namespace}'); {descriptor} = {api};
+"""
+
 
 def _mk_cb_key(action_name, method_name):
     """ helper function to create a unique actions dict key """
@@ -48,10 +55,10 @@ class JsonReprEncoder(json.JSONEncoder):
             # return decoded response body in case it's an already
             # rendered exception view
             return json.loads(obj.unicode_body)
-        jr = getattr(obj, 'json_repr', None)
-        if jr is None:
+        json_repr = getattr(obj, 'json_repr', None)
+        if json_repr is None:
             return super(JsonReprEncoder, self).default(obj)
-        return jr()
+        return json_repr()
 
 
 class IExtdirect(Interface):
@@ -89,7 +96,7 @@ class Extdirect(object):
 
     If ``expose_exceptions`` argument is set to True the exception
     traceback will be exposed in the response object. WARNING this
-    is potentially dangeerous, do not use in production environments.
+    is potentially dangerous, do not use in production environments.
 
     The ``debug_mode`` argument will create a 'message' key in the
     response object pointing to a structure that can be used in pyramid
@@ -141,17 +148,17 @@ class Extdirect(object):
     def get_actions(self):
         """ Builds and returns a dict of actions to be used in ExtDirect API """
         ret = {}
-        for (k, v) in self.actions.items():
+        for (key, val) in self.actions.items():
             items = []
-            for settings in v.values():
-                d = dict(
-                    len = settings['numargs'],
-                    name = settings['method_name']
+            for settings in val.values():
+                method_info = dict(
+                    len=settings['numargs'],
+                    name=settings['method_name']
                 )
                 if settings['accepts_files']:
-                    d['formHandler'] = True
-                items.append(d)
-            ret[k] = items
+                    method_info['formHandler'] = True
+                items.append(method_info)
+            ret[key] = items
         return ret
 
     def get_method(self, action, method):
@@ -160,7 +167,7 @@ class Extdirect(object):
             raise KeyError("Invalid action: {}".format(action))
         key = _mk_cb_key(action, method)
         if key not in self.actions[action]:
-            raise KeyError("No such method in '{}': '{}':".format(action, method))
+            raise KeyError("No such method in '{}': '{}'".format(action, method))
         return self.actions[action][key]
 
     def _get_api_dict(self, request):
@@ -174,18 +181,20 @@ class Extdirect(object):
                     actions[action] = all_actions[action]
         else:
             actions = all_actions
+        # FIXME: use route_url instead of request.application_url + '/' + self.router_path,
         return dict(
-            url = request.application_url + '/' + self.router_path,
-            type = 'remoting',
-            namespace = self.namespace,
-            actions = actions
+            url=request.application_url + '/' + self.router_path,
+            type='remoting',
+            namespace=self.namespace,
+            actions=actions
         )
 
     def dump_api(self, request):
         """ Dumps all known remote methods """
-        return "Ext.ns('{}'); {} = {};".format(self.namespace,
-            self.descriptor,
-            json.dumps(self._get_api_dict(request))
+        return JS_API_TPL.format(
+            namespace=self.namespace,
+            descriptor=self.descriptor,
+            api=json.dumps(self._get_api_dict(request))
         )
 
     def _do_route(self, action_name, method_name, params, trans_id, request):
@@ -222,24 +231,24 @@ class Extdirect(object):
             if not permission_ok:
                 raise AccessDeniedException("Access denied")
             ret["result"] = callback(*params)
-        except Exception as e:
+        except Exception as exc:
             ret["type"] = "exception"
             # Let a user defined view for specific exception prevent returning
             # a server error.
-            exception_view = render_view_to_response(e, request)
+            exception_view = render_view_to_response(exc, request)
             if exception_view is not None:
                 ret["result"] = exception_view
                 return ret
 
             # Log Error
-            logger.error("{}: {}".format(str(e.__class__.__name__), e))
-            logger.info(traceback.format_exc())
+            LOG.error("%s: %s", str(exc.__class__.__name__), exc)
+            LOG.info(traceback.format_exc())
 
             if self.expose_exceptions:
                 ret["result"] = {
                     'error': True,
-                    'message': str(e),
-                    'exception_class': str(e.__class__),
+                    'message': str(exc),
+                    'exception_class': str(exc.__class__),
                     'stacktrace': traceback.format_exc()
                 }
             else:
@@ -257,10 +266,11 @@ class Extdirect(object):
                 import sys
                 exc_history = request.exc_history
                 if exc_history is not None:
-                    tb = get_traceback(info=sys.exc_info(),
-                            skip=1,
-                            show_hidden_frames=False,
-                            ignore_system_exceptions=True)
+                    tb = get_traceback(
+                        info=sys.exc_info(),
+                        skip=1,
+                        show_hidden_frames=False,
+                        ignore_system_exceptions=True)
                     for frame in tb.frames:
                         exc_history.frames[frame.id] = frame
                     exc_history.tracebacks[tb.id] = tb
@@ -271,6 +281,7 @@ class Extdirect(object):
         return ret
 
     def route(self, request):
+        """ Route a request to the corresponding action method """
         is_form_data = is_form_submit(request)
         if is_form_data:
             params = parse_extdirect_form_submit(request)
@@ -284,21 +295,22 @@ class Extdirect(object):
                 ret = ret[0]
             return (json.dumps(ret, cls=self.json_encoder), False)
         ret = ret[0] # form data cannot be batched
-        form_data = json.dumps(ret, cls=self.json_encoder).replace("&quot;", r"\&quot;");
+        form_data = json.dumps(ret, cls=self.json_encoder).replace("&quot;", r"\&quot;")
         return (FORM_SUBMIT_RESPONSE_TPL.format(form_data), True)
 
 
-class extdirect_method(object):
+class extdirect_method(object): # pylint: disable=invalid-name, too-few-public-methods
     """Enables direct extjs access to python methods through json/form submit"""
     def __init__(self, action=None, method_name=None, permission=None,
                  accepts_files=False, request_as_last_param=False):
+        self.info = None
         self._settings = dict(
-            action = action,
-            method_name = method_name,
-            permission = permission,
-            accepts_files = accepts_files,
-            request_as_last_param = request_as_last_param,
-            original_name = None,
+            action=action,
+            method_name=method_name,
+            permission=permission,
+            accepts_files=accepts_files,
+            request_as_last_param=request_as_last_param,
+            original_name=None
         )
 
     def __call__(self, wrapped):
@@ -307,30 +319,35 @@ class extdirect_method(object):
         if self._settings["method_name"] is None:
             self._settings["method_name"] = original_name
 
-        self.info = venusian.attach(wrapped,
-                                    self.register,
-                                    category='extdirect')
+        self.info = venusian.attach(
+            wrapped,
+            self.register,
+            category='extdirect'
+        )
         return wrapped
 
     def _get_settings(self):
         return self._settings.copy()
 
-    def register(self, scanner, name, ob):
+    def register(self, scanner, name, obj):
+        """ Venusian callback that registers a function
+            or a class method as extdirect method
+        """
         settings = self._get_settings()
 
-        class_context = isinstance(ob, type)
+        class_context = isinstance(obj, type)
 
         settings['class'] = None
         if class_context:
-            settings['class'] = ob
-            callback = getattr(ob, settings["original_name"])
+            settings['class'] = obj
+            callback = getattr(obj, settings["original_name"])
             numargs = callback.__code__.co_argcount
             # instance var doesn't count
             numargs -= 1
         else:
             if settings['action'] is None:
                 raise ValueError("Decorated function has no action (name)")
-            callback = ob
+            callback = obj
             numargs = callback.__code__.co_argcount
 
         if numargs and settings['request_as_last_param']:
@@ -343,7 +360,7 @@ class extdirect_method(object):
             name = action
 
         if class_context:
-            class_settings = getattr(ob, '__extdirect_settings__', None)
+            class_settings = getattr(obj, '__extdirect_settings__', None)
             if class_settings:
                 if action is None:
                     name = class_settings.get("default_action_name", name)
@@ -387,11 +404,11 @@ def parse_extdirect_request(request):
     ret = []
     if not isinstance(decoded_body, list):
         decoded_body = [decoded_body]
-    for p in decoded_body:
-        action = p['action']
-        method = p['method']
-        data = p['data']
-        tid = p['tid']
+    for part in decoded_body:
+        action = part['action']
+        method = part['method']
+        data = part['data']
+        tid = part['tid']
         ret.append((action, method, data, tid))
     return ret
 
