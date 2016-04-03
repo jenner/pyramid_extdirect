@@ -8,7 +8,7 @@ This `pyramid`_ plugin provides a router for the `ExtDirect Sencha`_ API
 included in `ExtJS`_ .
 
 .. _`pyramid`: http://docs.pylonsproject.org/en/latest/docs/pyramid.html
-.. _`ExtDirect Sencha`: http://www.sencha.com/products/extjs/extdirect
+.. _`ExtDirect Sencha`: https://docs.sencha.com/extjs/6.0/backend_connectors/direct/specification.html
 .. _`ExtJS`: http://www.sencha.com/products/extjs/
 
 
