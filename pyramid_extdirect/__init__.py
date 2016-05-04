@@ -27,6 +27,7 @@ LOG = logging.getLogger(__name__)
 FORM_DATA_KEYS = frozenset([
     "extAction",
     "extMethod",
+    "extMetadata",
     "extTID",
     "extUpload",
     "extType"
@@ -138,6 +139,7 @@ class Extdirect(object):
         ``numargs``: Number of arguments passed to the wrapped callable
         ``accept_files``: If true, this action will be declared as formHandler in API
         ``permission``: The permission needed to execute the wrapped callable
+        ``metadata``: Metadata definition
         ``request_as_last_param``: If true, the wrapped callable will receive a request object
             as last argument
 
@@ -157,6 +159,18 @@ class Extdirect(object):
                 )
                 if settings['accepts_files']:
                     method_info['formHandler'] = True
+                meta = settings['metadata']
+                if meta:
+                    if isinstance(meta, ExtListMetadata):
+                        method_info['metadata'] = {
+                            'len': meta.numargs,
+                            'strict': meta.strict
+                        }
+                    elif isinstance(meta, ExtDictMetadata):
+                        method_info['metadata'] = {
+                            'params': meta.param_names,
+                            'strict': meta.strict
+                        }
                 items.append(method_info)
             ret[key] = items
         return ret
@@ -197,7 +211,7 @@ class Extdirect(object):
             api=json.dumps(self._get_api_dict(request))
         )
 
-    def _do_route(self, action_name, method_name, params, trans_id, request):
+    def _do_route(self, action_name, method_name, params, metadata, trans_id, request):
         """ Performs routing, i.e. calls decorated methods/functions """
         if params is None:
             params = list()
@@ -217,12 +231,18 @@ class Extdirect(object):
         permission_ok = True
         context = request.root
 
+        prepend = []
         if settings['class']:
             instance = settings['class'](request)
-            params.insert(0, instance)
+            prepend.append(instance)
             context = instance
         elif append_request:
             params.append(request)
+
+        if settings['metadata']:
+            prepend.append(metadata)
+
+        params = prepend + params
 
         if permission is not None:
             permission_ok = has_permission(permission, context, request)
@@ -284,12 +304,12 @@ class Extdirect(object):
         """ Route a request to the corresponding action method """
         is_form_data = is_form_submit(request)
         if is_form_data:
-            params = parse_extdirect_form_submit(request)
+            data = parse_extdirect_form_submit(request)
         else:
-            params = parse_extdirect_request(request)
+            data = parse_extdirect_request(request)
         ret = []
-        for (act, meth, params, tid) in params:
-            ret.append(self._do_route(act, meth, params, tid, request))
+        for (act, meth, params, metadata, tid) in data:
+            ret.append(self._do_route(act, meth, params, metadata, tid, request))
         if not is_form_data:
             if len(ret) == 1:
                 ret = ret[0]
@@ -299,16 +319,57 @@ class Extdirect(object):
         return (FORM_SUBMIT_RESPONSE_TPL.format(form_data), True)
 
 
+class ExtMetadata(object):
+    """ Base metadata class """
+
+    def __init__(self, strict=True):
+        self.strict = strict
+
+
+class ExtListMetadata(ExtMetadata):
+    """ Represents a metadata definition that will
+        pass in an ordered list of parameters
+        ``metadata`` arguments
+    """
+
+    def __init__(self, numargs=None, strict=True):
+        super(ExtListMetadata, self).__init__(strict)
+        if type(numargs) is not int or numargs < 1:
+            raise ValueError("'numargs' has to be an int > 0")
+        self.numargs = numargs
+
+
+class ExtDictMetadata(ExtMetadata):
+    """ Represents a metadata definition that will
+        pass in a dict as ``metadata`` argument
+        with members defined in ``param_names``
+    """
+
+    def __init__(self, param_names=None, strict=True):
+        super(ExtDictMetadata, self).__init__(strict)
+        if self.strict and not param_names:
+            raise ValueError("Strict is set, please provide at least one param name")
+        self.param_names = param_names
+
+
 class extdirect_method(object): # pylint: disable=invalid-name, too-few-public-methods
     """Enables direct extjs access to python methods through json/form submit"""
-    def __init__(self, action=None, method_name=None, permission=None,
-                 accepts_files=False, request_as_last_param=False):
+    def __init__(self,
+            action=None,
+            method_name=None,
+            permission=None,
+            accepts_files=False,
+            metadata=None,
+            request_as_last_param=False):
+        if metadata and not isinstance(metadata, ExtMetadata):
+            raise ValueError("Metadata must be an instance of either ExtListMetadata or ExtDictMetadata")
         self.info = None
         self._settings = dict(
             action=action,
             method_name=method_name,
             permission=permission,
             accepts_files=accepts_files,
+            metadata=metadata,
             request_as_last_param=request_as_last_param,
             original_name=None
         )
@@ -334,6 +395,7 @@ class extdirect_method(object): # pylint: disable=invalid-name, too-few-public-m
             or a class method as extdirect method
         """
         settings = self._get_settings()
+        metadata = settings['metadata']
 
         class_context = isinstance(obj, type)
 
@@ -352,6 +414,11 @@ class extdirect_method(object): # pylint: disable=invalid-name, too-few-public-m
 
         if numargs and settings['request_as_last_param']:
             numargs -= 1
+
+        if metadata:
+            numargs -= 1
+            if numargs < 0:
+                raise ValueError("{} must provide at least one argument for metadata".format(settings['original_name']))
 
         settings['numargs'] = numargs
 
@@ -387,11 +454,14 @@ def parse_extdirect_form_submit(request):
     action = params.get('extAction')
     method = params.get('extMethod')
     tid = params.get('extTID')
+    metadata = params.get('extMetadata')
+    if metadata:
+        metadata = json.loads(metadata)
     data = dict()
     for key in params:
         if key not in FORM_DATA_KEYS:
             data[key] = params[key]
-    return [(action, method, [data], tid)]
+    return [(action, method, [data], metadata, tid)]
 
 
 def parse_extdirect_request(request):
@@ -408,8 +478,9 @@ def parse_extdirect_request(request):
         action = part['action']
         method = part['method']
         data = part['data']
+        metadata = part.get('metadata', None)
         tid = part['tid']
-        ret.append((action, method, data, tid))
+        ret.append((action, method, data, metadata, tid))
     return ret
 
 
