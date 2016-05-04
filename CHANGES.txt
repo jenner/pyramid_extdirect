@@ -1,5 +1,9 @@
 pyramid_extdirect Changelog
 ==============================
+0.6.0
+----------------
+- Added metadata support
+
 0.5.2
 ----------------
 - Added error logging and fixed the issue when 'json_encoder'
