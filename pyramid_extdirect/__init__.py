@@ -74,7 +74,7 @@ class AccessDeniedException(Exception):
 @implementer(IExtdirect)
 class Extdirect(object):
     """
-    Handles ExtDirect API respresentation and routing.
+    Handles ExtDirect API representation and routing.
 
     The Extdirect accepts a number of arguments: ``app``,
     ``api_path``, ``router_path``, ``namespace``, ``descriptor``
